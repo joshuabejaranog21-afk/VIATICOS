@@ -1,0 +1,17 @@
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\bin\Debug\net8.0\OneCardExpenseValidator.Infrastructure.deps.json
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\bin\Debug\net8.0\OneCardExpenseValidator.Infrastructure.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\bin\Debug\net8.0\OneCardExpenseValidator.Infrastructure.pdb
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\bin\Debug\net8.0\OneCardExpenseValidator.Core.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\bin\Debug\net8.0\OneCardExpenseValidator.Core.pdb
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.AssemblyInfo.cs
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardE.B305678C.Up2Date
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\refint\OneCardExpenseValidator.Infrastructure.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.pdb
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\ref\OneCardExpenseValidator.Infrastructure.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\bin\Debug\net8.0\OneCardExpenseValidator.Infrastructure.runtimeconfig.json
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Infrastructure\obj\Debug\net8.0\OneCardExpenseValidator.Infrastructure.genruntimeconfig.cache
