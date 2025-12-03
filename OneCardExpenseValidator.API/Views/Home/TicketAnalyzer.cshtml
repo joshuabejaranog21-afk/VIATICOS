@@ -1,0 +1,178 @@
+@{
+    ViewData["Title"] = "Analizador de Recibos";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-receipt-cutoff"></i> Analizador de Recibos con IA</h1>
+    </div>
+
+    <!-- Sección de carga de imagen -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Subir Recibo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="receiptImage" class="form-label">Selecciona una imagen del recibo</label>
+                        <input class="form-control" type="file" id="receiptImage" accept="image/*">
+                        <div class="form-text">Formatos aceptados: JPG, PNG, JPEG</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btnAnalyzeReceipt">
+                        <i class="bi bi-search"></i> Analizar con IA
+                    </button>
+                    <div id="loadingSpinner" class="d-none mt-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <span class="ms-2">Analizando recibo con Claude AI...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de resultados -->
+    <div id="resultsSection" class="d-none">
+        <!-- Información del recibo -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información del Recibo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Tienda:</strong> <span id="vendorName">-</span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Fecha:</strong> <span id="ticketDate">-</span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Total:</strong> <span id="totalAmount">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card shadow border-left-primary">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Productos</div>
+                        <div class="h5 mb-0 font-weight-bold" id="statTotalProducts">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow border-left-success">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Deducibles</div>
+                        <div class="h5 mb-0 font-weight-bold" id="statDeductible">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow border-left-danger">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">No Deducibles</div>
+                        <div class="h5 mb-0 font-weight-bold" id="statNonDeductible">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de productos -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-list-check"></i> Productos Detectados</h5>
+                        <small>Puedes cambiar manualmente el estado de cada producto</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 25%">Producto</th>
+                                        <th style="width: 8%">Cant.</th>
+                                        <th style="width: 10%">Precio Unit.</th>
+                                        <th style="width: 10%">Total</th>
+                                        <th style="width: 12%">Categoría</th>
+                                        <th style="width: 10%">Estado IA</th>
+                                        <th style="width: 20%">Acciones Manuales</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody">
+                                    <!-- Se llenará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/ticket-analyzer.js"></script>
+}
+
+<style>
+    .border-left-primary {
+        border-left: 4px solid #4e73df;
+    }
+    .border-left-success {
+        border-left: 4px solid #1cc88a;
+    }
+    .border-left-danger {
+        border-left: 4px solid #e74a3b;
+    }
+
+    .btn-deductible {
+        background-color: #1cc88a;
+        border-color: #1cc88a;
+        color: white;
+    }
+
+    .btn-deductible:hover {
+        background-color: #17a673;
+        border-color: #17a673;
+    }
+
+    .btn-non-deductible {
+        background-color: #e74a3b;
+        border-color: #e74a3b;
+        color: white;
+    }
+
+    .btn-non-deductible:hover {
+        background-color: #d52a1a;
+        border-color: #d52a1a;
+    }
+
+    .badge-deductible {
+        background-color: #1cc88a;
+    }
+
+    .badge-non-deductible {
+        background-color: #e74a3b;
+    }
+
+    .badge-modified {
+        background-color: #f6c23e;
+    }
+
+    .product-row-modified {
+        background-color: #fff3cd;
+    }
+</style>

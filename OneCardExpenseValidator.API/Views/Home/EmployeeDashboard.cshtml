@@ -1,0 +1,244 @@
+@{
+    ViewData["Title"] = "Mi Dashboard";
+    var employee = ViewBag.Employee;
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-person-badge"></i> Bienvenido, @employee.FirstName @employee.LastName</h1>
+</div>
+
+<!-- Alerta de bienvenida -->
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <i class="bi bi-info-circle-fill"></i> <strong>Departamento:</strong> @employee.Department?.DepartmentName
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<!-- Estadísticas de Tickets -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Mis Tickets
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalMyTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-receipt fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Pendientes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.PendingMyTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-hourglass-split fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Aprobados
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.ApprovedMyTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Rechazados
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.RejectedMyTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-x-circle fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Límites de Gastos -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 bg-info text-white">
+                <h6 class="m-0 font-weight-bold"><i class="bi bi-calendar-day"></i> Gastos del Día</h6>
+            </div>
+            <div class="card-body">
+                <h4 class="text-info">$@ViewBag.DailyExpenses.ToString("N2")</h4>
+                <div class="progress mb-2" style="height: 25px;">
+                    @{
+                        var dailyPercentage = ViewBag.DailyLimit > 0 ? (ViewBag.DailyExpenses / ViewBag.DailyLimit * 100) : 0;
+                        var dailyProgressClass = dailyPercentage > 90 ? "bg-danger" : (dailyPercentage > 70 ? "bg-warning" : "bg-success");
+                    }
+                    <div class="progress-bar @dailyProgressClass" role="progressbar" style="width: @dailyPercentage%" aria-valuenow="@ViewBag.DailyExpenses" aria-valuemin="0" aria-valuemax="@ViewBag.DailyLimit">
+                        @dailyPercentage.ToString("N0")%
+                    </div>
+                </div>
+                <p class="mb-0 text-muted">
+                    <small>Límite diario: $@ViewBag.DailyLimit.ToString("N2")</small>
+                </p>
+                @if (dailyPercentage > 90)
+                {
+                    <div class="alert alert-danger mt-2 mb-0" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Estás cerca de alcanzar tu límite diario
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 bg-primary text-white">
+                <h6 class="m-0 font-weight-bold"><i class="bi bi-calendar-month"></i> Gastos del Mes</h6>
+            </div>
+            <div class="card-body">
+                <h4 class="text-primary">$@ViewBag.MonthlyExpenses.ToString("N2")</h4>
+                <div class="progress mb-2" style="height: 25px;">
+                    @{
+                        var monthlyPercentage = ViewBag.MonthlyLimit > 0 ? (ViewBag.MonthlyExpenses / ViewBag.MonthlyLimit * 100) : 0;
+                        var monthlyProgressClass = monthlyPercentage > 90 ? "bg-danger" : (monthlyPercentage > 70 ? "bg-warning" : "bg-success");
+                    }
+                    <div class="progress-bar @monthlyProgressClass" role="progressbar" style="width: @monthlyPercentage%" aria-valuenow="@ViewBag.MonthlyExpenses" aria-valuemin="0" aria-valuemax="@ViewBag.MonthlyLimit">
+                        @monthlyPercentage.ToString("N0")%
+                    </div>
+                </div>
+                <p class="mb-0 text-muted">
+                    <small>Límite mensual: $@ViewBag.MonthlyLimit.ToString("N2")</small>
+                </p>
+                @if (monthlyPercentage > 90)
+                {
+                    <div class="alert alert-danger mt-2 mb-0" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Estás cerca de alcanzar tu límite mensual
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acceso Rápido y Tickets Recientes -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Acceso Rápido</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a asp-controller="Home" asp-action="PhoneScanner" class="list-group-item list-group-item-action bg-light border-primary">
+                        <i class="bi bi-camera text-primary"></i> <strong>Phone Scanner</strong>
+                        <br><small class="text-muted">Escanea productos antes de comprar</small>
+                    </a>
+                    <a asp-controller="ExpenseTickets" asp-action="Create" class="list-group-item list-group-item-action">
+                        <i class="bi bi-plus-circle text-primary"></i> Crear Nuevo Ticket de Gasto
+                    </a>
+                    <a asp-controller="ExpenseTickets" asp-action="MyTickets" class="list-group-item list-group-item-action">
+                        <i class="bi bi-list-ul text-info"></i> Ver Mis Tickets
+                    </a>
+                    <a asp-controller="Employee" asp-action="Profile" class="list-group-item list-group-item-action">
+                        <i class="bi bi-person-circle text-success"></i> Ver Mi Perfil
+                    </a>
+                    <a asp-controller="Categories" asp-action="Index" class="list-group-item list-group-item-action">
+                        <i class="bi bi-tags text-warning"></i> Ver Categorías de Gastos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Mis Tickets Recientes</h6>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentMyTickets != null && ViewBag.RecentMyTickets.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Vendor</th>
+                                    <th>Monto</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ticket in ViewBag.RecentMyTickets)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-controller="ExpenseTickets" asp-action="Details" asp-route-id="@ticket.TicketId">
+                                                #@ticket.TicketId
+                                            </a>
+                                        </td>
+                                        <td>@ticket.Vendor</td>
+                                        <td>$@ticket.TotalAmount.ToString("N2")</td>
+                                        <td>
+                                            @if (ticket.ValidationStatus == "Pending")
+                                            {
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            }
+                                            else if (ticket.ValidationStatus == "Approved")
+                                            {
+                                                <span class="badge bg-success">Aprobado</span>
+                                            }
+                                            else if (ticket.ValidationStatus == "Rejected")
+                                            {
+                                                <span class="badge bg-danger">Rechazado</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No tienes tickets registrados aún.</p>
+                        <a asp-controller="ExpenseTickets" asp-action="Create" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Crear Mi Primer Ticket
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

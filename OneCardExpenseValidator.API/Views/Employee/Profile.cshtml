@@ -1,0 +1,212 @@
+@model OneCardExpenseValidator.Infrastructure.Entities.Employee
+
+@{
+    ViewData["Title"] = "Mi Perfil";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-person-circle"></i> Mi Perfil</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a asp-controller="Home" asp-action="EmployeeDashboard" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información Personal -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge-fill"></i> Información Personal</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                </div>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">Nombre:</td>
+                            <td>@Model.FirstName @Model.LastName</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Email:</td>
+                            <td>@Model.Email</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Código Empleado:</td>
+                            <td>@Model.EmployeeCode</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Departamento:</td>
+                            <td>
+                                <span class="badge bg-info">@Model.Department?.DepartmentName</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Posición:</td>
+                            <td>@Model.Position</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Estado:</td>
+                            <td>
+                                @if (Model.IsActive == true)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactivo</span>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Límites de Gastos -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-wallet2"></i> Límites de Gastos</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="text-muted">Límite Diario</h6>
+                    <h3 class="text-success mb-2">$@((Model.DailyExpenseLimit ?? 0).ToString("N2"))</h3>
+                    <div class="progress" style="height: 25px;">
+                        @{
+                            var dailyPercentage = Model.DailyExpenseLimit > 0 ? (ViewBag.DailyExpenses / Model.DailyExpenseLimit.Value * 100) : 0;
+                            var dailyProgressClass = dailyPercentage > 90 ? "bg-danger" : (dailyPercentage > 70 ? "bg-warning" : "bg-success");
+                        }
+                        <div class="progress-bar @dailyProgressClass" role="progressbar" style="width: @dailyPercentage%">
+                            @dailyPercentage.ToString("N0")%
+                        </div>
+                    </div>
+                    <small class="text-muted">Gastado hoy: $@(((decimal)ViewBag.DailyExpenses).ToString("N2"))</small>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="text-muted">Límite Mensual</h6>
+                    <h3 class="text-primary mb-2">$@((Model.MonthlyExpenseLimit ?? 0).ToString("N2"))</h3>
+                    <div class="progress" style="height: 25px;">
+                        @{
+                            var monthlyPercentage = Model.MonthlyExpenseLimit > 0 ? (ViewBag.MonthlyExpenses / Model.MonthlyExpenseLimit.Value * 100) : 0;
+                            var monthlyProgressClass = monthlyPercentage > 90 ? "bg-danger" : (monthlyPercentage > 70 ? "bg-warning" : "bg-success");
+                        }
+                        <div class="progress-bar @monthlyProgressClass" role="progressbar" style="width: @monthlyPercentage%">
+                            @monthlyPercentage.ToString("N0")%
+                        </div>
+                    </div>
+                    <small class="text-muted">Gastado este mes: $@(((decimal)ViewBag.MonthlyExpenses).ToString("N2"))</small>
+                </div>
+
+                @if (dailyPercentage > 90 || monthlyPercentage > 90)
+                {
+                    <div class="alert alert-warning mb-0" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <small>Estás cerca de alcanzar tus límites de gastos.</small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas de Tickets -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Estadísticas de Tickets</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-12 mb-3">
+                        <h6 class="text-muted">Total de Tickets</h6>
+                        <h2 class="text-primary">@ViewBag.TotalTickets</h2>
+                    </div>
+                </div>
+
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="p-2 bg-warning bg-opacity-10 rounded">
+                            <i class="bi bi-hourglass-split text-warning fs-3"></i>
+                            <h5 class="mb-0 mt-2">@ViewBag.TotalPending</h5>
+                            <small class="text-muted">Pendientes</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 bg-success bg-opacity-10 rounded">
+                            <i class="bi bi-check-circle text-success fs-3"></i>
+                            <h5 class="mb-0 mt-2">@ViewBag.TotalApproved</h5>
+                            <small class="text-muted">Aprobados</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 bg-danger bg-opacity-10 rounded">
+                            <i class="bi bi-x-circle text-danger fs-3"></i>
+                            <h5 class="mb-0 mt-2">@ViewBag.TotalRejected</h5>
+                            <small class="text-muted">Rechazados</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="d-grid gap-2">
+                    <a asp-controller="ExpenseTickets" asp-action="MyTickets" class="btn btn-primary">
+                        <i class="bi bi-list-ul"></i> Ver Mis Tickets
+                    </a>
+                    <a asp-controller="ExpenseTickets" asp-action="Create" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Crear Nuevo Ticket
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Departamento -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Información del Departamento</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold">Departamento:</td>
+                                    <td>@Model.Department?.DepartmentName</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Código:</td>
+                                    <td>@Model.Department?.DepartmentCode</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold">Presupuesto del Departamento:</td>
+                                    <td>$@Model.Department?.BudgetLimit>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Descripción:</td>
+                                    <td>@Model.Department?.DepartmentName</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

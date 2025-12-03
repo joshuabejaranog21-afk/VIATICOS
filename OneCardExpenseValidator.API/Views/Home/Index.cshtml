@@ -1,0 +1,194 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Tickets
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.TotalTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-receipt fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Pendientes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.PendingTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-hourglass-split fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Aprobados
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.ApprovedTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Rechazados
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.RejectedTickets</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-x-circle fs-2 text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Acceso Rápido</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a asp-controller="ExpenseTickets" asp-action="Create" class="list-group-item list-group-item-action">
+                        <i class="bi bi-plus-circle text-primary"></i> Crear Nuevo Ticket
+                    </a>
+                    <a asp-controller="ExpenseTickets" asp-action="Index" class="list-group-item list-group-item-action">
+                        <i class="bi bi-list-ul text-info"></i> Ver Todos los Tickets
+                    </a>
+                    <a asp-controller="Employees" asp-action="Index" class="list-group-item list-group-item-action">
+                        <i class="bi bi-people text-success"></i> Gestionar Empleados
+                    </a>
+                    <a asp-controller="Departments" asp-action="Index" class="list-group-item list-group-item-action">
+                        <i class="bi bi-building text-warning"></i> Gestionar Departamentos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Tickets Recientes</h6>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentTickets != null && ViewBag.RecentTickets.Count > 0)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Empleado</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ticket in ViewBag.RecentTickets)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-controller="ExpenseTickets" asp-action="Details" asp-route-id="@ticket.TicketId">
+                                                #@ticket.TicketId
+                                            </a>
+                                        </td>
+                                        <td>@ticket.Employee?.FirstName @ticket.Employee?.LastName</td>
+                                        <td>@ticket.SubmissionDate?.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            @if (ticket.ValidationStatus == "Pending")
+                                            {
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            }
+                                            else if (ticket.ValidationStatus == "Approved")
+                                            {
+                                                <span class="badge bg-success">Aprobado</span>
+                                            }
+                                            else if (ticket.ValidationStatus == "Rejected")
+                                            {
+                                                <span class="badge bg-danger">Rechazado</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No hay tickets recientes.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-info shadow">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people-fill"></i> Empleados Activos</h5>
+                <p class="display-4">@ViewBag.TotalEmployees</p>
+                <a asp-controller="Employees" asp-action="Index" class="btn btn-light btn-sm">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-secondary shadow">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-building"></i> Departamentos</h5>
+                <p class="display-4">@ViewBag.TotalDepartments</p>
+                <a asp-controller="Departments" asp-action="Index" class="btn btn-light btn-sm">Ver Todos</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-white bg-success shadow">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-tags-fill"></i> Categorías</h5>
+                <p class="display-4">-</p>
+                <a asp-controller="Categories" asp-action="Index" class="btn btn-light btn-sm">Ver Todas</a>
+            </div>
+        </div>
+    </div>
+</div>

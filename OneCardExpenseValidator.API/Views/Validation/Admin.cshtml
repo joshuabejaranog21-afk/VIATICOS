@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "Validación de Productos - Admin";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/validation-styles.css" />
+
+<div class="validation-container">
+    <!-- Header -->
+    <div class="validation-header">
+        <h1>🔍 Validación de Productos en Tiempo Real</h1>
+        <p>Escanee el código QR con su teléfono para comenzar</p>
+    </div>
+
+    <!-- Panel principal -->
+    <div class="validation-main">
+        <!-- Columna izquierda: QR y Estado -->
+        <div class="validation-left-panel">
+            <!-- QR Code Section -->
+            <div class="qr-section">
+                <div id="qr-container" class="qr-container">
+                    <div class="qr-loading">
+                        <div class="spinner"></div>
+                        <p>Generando código QR...</p>
+                    </div>
+                </div>
+
+                <div id="qr-info" class="qr-info hidden">
+                    <p>📱 <strong>Instrucciones:</strong></p>
+                    <ol>
+                        <li>Abra la cámara de su teléfono</li>
+                        <li>Escanee el código QR</li>
+                        <li>Espere la conexión</li>
+                        <li>Comience a tomar fotos</li>
+                    </ol>
+                </div>
+
+                <button id="btn-new-session" class="btn btn-primary hidden">
+                    🔄 Nueva Sesión
+                </button>
+            </div>
+
+            <!-- Estado de conexión -->
+            <div id="connection-status" class="connection-status status-waiting">
+                <div class="status-icon">⏳</div>
+                <div class="status-text">
+                    <strong id="status-title">Esperando conexión...</strong>
+                    <p id="status-message">Escanee el código QR con su teléfono</p>
+                </div>
+            </div>
+
+            <!-- Estadísticas de sesión -->
+            <div id="session-stats" class="session-stats hidden">
+                <div class="stat-item">
+                    <span class="stat-label">Validaciones:</span>
+                    <span id="stat-count" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Deducibles:</span>
+                    <span id="stat-deductible" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">No Deducibles:</span>
+                    <span id="stat-non-deductible" class="stat-value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: Vista previa y resultados -->
+        <div class="validation-right-panel">
+            <!-- Vista previa de imagen -->
+            <div id="image-preview-section" class="image-preview-section hidden">
+                <h3>📸 Imagen Recibida</h3>
+                <div class="image-preview-container">
+                    <img id="preview-image" src="" alt="Vista previa" />
+                    <div id="preview-loading" class="preview-loading">
+                        <div class="spinner"></div>
+                        <p>Analizando con Claude AI...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultado del análisis -->
+            <div id="result-section" class="result-section hidden">
+                <div id="result-card" class="result-card">
+                    <!-- Contenido dinámico insertado por JavaScript -->
+                </div>
+            </div>
+
+            <!-- Historial de validaciones -->
+            <div id="history-section" class="history-section hidden">
+                <h3>📋 Historial de Validaciones</h3>
+                <div id="history-list" class="history-list">
+                    <!-- Items insertados dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session ID (hidden) -->
+    <input type="hidden" id="session-id" value="" />
+</div>
+
+<!-- Toast notifications -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+<script src="~/js/validation-admin.js"></script>
+
+<script>
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof ValidationAdmin !== 'undefined') {
+            ValidationAdmin.init();
+        } else {
+            console.error('ValidationAdmin no está definido. Verifique que validation-admin.js esté cargado.');
+        }
+    });
+</script>

@@ -1,0 +1,1359 @@
+@model OneCardExpenseValidator.Infrastructure.Entities.ExpenseTicket
+
+@{
+    ViewData["Title"] = "Detalles del Ticket";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-receipt"></i> Detalles del Ticket #@Model.TicketNumber</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        @if (Model.ValidationStatus == "Pending")
+        {
+            <a asp-action="Approve" asp-route-id="@Model.TicketId" class="btn btn-success me-2">
+                <i class="bi bi-check-circle"></i> Aprobar
+            </a>
+            <a asp-action="Reject" asp-route-id="@Model.TicketId" class="btn btn-danger me-2">
+                <i class="bi bi-x-circle"></i> Rechazar
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.TicketId" class="btn btn-warning me-2">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+        }
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Información del Ticket</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Número de Ticket:</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.TicketNumber)</dd>
+
+                    <dt class="col-sm-4">Empleado:</dt>
+                    <dd class="col-sm-8">
+                        <a asp-controller="Employees" asp-action="Details" asp-route-id="@Model.Employee?.EmployeeId">
+                            @Model.Employee?.FirstName @Model.Employee?.LastName
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-4">Departamento:</dt>
+                    <dd class="col-sm-8">@Model.Employee?.Department?.DepartmentName</dd>
+
+                    <dt class="col-sm-4">Fecha del Ticket:</dt>
+                    <dd class="col-sm-8">
+                        <span id="ticketDateDisplay">@Model.TicketDate.ToString("dd/MM/yyyy")</span>
+                        @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" onclick="editTicketField('ticketDate', '@Model.TicketDate.ToString("yyyy-MM-dd")')" title="Editar Fecha">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Fecha de Envío:</dt>
+                    <dd class="col-sm-8">@Model.SubmissionDate?.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                    <dt class="col-sm-4">Vendedor:</dt>
+                    <dd class="col-sm-8">
+                        <span id="vendorDisplay">@Html.DisplayFor(model => model.Vendor)</span>
+                        @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" onclick="editTicketField('vendor', '@Model.Vendor')" title="Editar Vendedor">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4">Monto Total del Ticket:</dt>
+                    <dd class="col-sm-8">
+                        <strong id="totalAmountDisplay">@string.Format("${0:N2}", Model.TotalAmount)</strong>
+                        @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" onclick="editTicketField('totalAmount', '@Model.TotalAmount')" title="Editar Monto Total">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        }
+                    </dd>
+
+                    @if (Model.ValidationStatus == "Approved")
+                    {
+                        @if (Model.DeductibleAmount.HasValue)
+                        {
+                            <dt class="col-sm-4">Monto Deducible:</dt>
+                            <dd class="col-sm-8">
+                                <strong class="text-success fs-5">@string.Format("${0:N2}", Model.DeductibleAmount.Value)</strong>
+                                <br/>
+                                <small class="text-muted">Cantidad que reembolsará la compañía</small>
+                            </dd>
+                        }
+
+                        @if (Model.NonDeductibleAmount.HasValue && Model.NonDeductibleAmount.Value > 0)
+                        {
+                            <dt class="col-sm-4">Monto No Deducible:</dt>
+                            <dd class="col-sm-8">
+                                <strong class="text-danger fs-5">@string.Format("${0:N2}", Model.NonDeductibleAmount.Value)</strong>
+                                <br/>
+                                <small class="text-muted">Cantidad que pagará el empleado</small>
+                            </dd>
+                        }
+                    }
+
+                    <dt class="col-sm-4">Estado:</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.ValidationStatus == "Pending")
+                        {
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        }
+                        else if (Model.ValidationStatus == "Approved")
+                        {
+                            <span class="badge bg-success">Aprobado</span>
+                            @if (Model.NonDeductibleAmount.HasValue && Model.NonDeductibleAmount.Value > 0)
+                            {
+                                <br/>
+                                <small class="text-warning mt-2 d-inline-block">
+                                    <i class="bi bi-exclamation-triangle"></i> Con productos no deducibles
+                                </small>
+                            }
+                        }
+                        else if (Model.ValidationStatus == "Rejected")
+                        {
+                            <span class="badge bg-danger">Rechazado</span>
+                        }
+                    </dd>
+
+                    @if (Model.ApprovedByNavigation != null)
+                    {
+                        <dt class="col-sm-4">Aprobado Por:</dt>
+                        <dd class="col-sm-8">@Model.ApprovedByNavigation.FirstName @Model.ApprovedByNavigation.LastName</dd>
+
+                        <dt class="col-sm-4">Fecha de Aprobación:</dt>
+                        <dd class="col-sm-8">@Model.ApprovalDate?.ToString("dd/MM/yyyy HH:mm")</dd>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.RejectionReason))
+                    {
+                        <dt class="col-sm-4">Razón de Rechazo:</dt>
+                        <dd class="col-sm-8">
+                            <div class="alert alert-danger" role="alert">
+                                @Model.RejectionReason
+                            </div>
+                        </dd>
+                    }
+
+                    <dt class="col-sm-4">Notas:</dt>
+                    <dd class="col-sm-8">
+                        <span id="notesDisplay">@(string.IsNullOrEmpty(Model.Notes) ? "Sin notas" : Model.Notes)</span>
+                        @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                        {
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-2" onclick="editTicketField('notes', '@(Model.Notes ?? "")')" title="Editar Notas">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Items del Gasto</h5>
+                @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                {
+                    <button type="button" class="btn btn-light btn-sm" onclick="toggleAddProductForm()">
+                        <i class="bi bi-plus-circle"></i> Agregar Producto
+                    </button>
+                }
+            </div>
+            <div class="card-body">
+                @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                {
+                    <div id="addProductForm" class="mb-4 p-3 border rounded bg-light" style="display: none;">
+                        <h6 class="mb-3">Agregar Producto del Recibo</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Descripción del Producto (del recibo)</label>
+                                <input type="text"
+                                       id="productSearch"
+                                       class="form-control"
+                                       placeholder="Ej: AGUA BONAFON, COCA COLA 600ML..."
+                                       autocomplete="off">
+                                <div id="searchResults" class="list-group mt-2" style="position: absolute; z-index: 1000; display: none; max-width: 500px;"></div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Cantidad</label>
+                                <input type="number" id="productQuantity" class="form-control" value="1" min="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Precio Unit.</label>
+                                <input type="number" id="productUnitPrice" class="form-control" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Total</label>
+                                <input type="number" id="productTotal" class="form-control" step="0.01" min="0" readonly>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div id="validationResult" class="alert" style="display: none;"></div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-primary" onclick="addProductToTicket()" id="btnAddProduct" disabled>
+                                <i class="bi bi-check-circle"></i> Agregar al Ticket
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleAddProductForm()">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table table-sm" id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Categoría</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unit.</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Notas</th>
+                                @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                                {
+                                    <th>Acciones</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ExpenseItems != null && Model.ExpenseItems.Any())
+                            {
+                                @foreach (var item in Model.ExpenseItems)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (item.Product != null)
+                                            {
+                                                <strong>@item.Product.ProductName</strong>
+                                                @if (!string.IsNullOrEmpty(item.Product.Brand))
+                                                {
+                                                    <br/><small class="text-muted">@item.Product.Brand</small>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <strong>@item.ItemDescription</strong>
+                                                <br/><small class="text-warning">⚠ Producto analizado por IA</small>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.OriginalDescription))
+                                            {
+                                                <br/><small class="text-muted">Del recibo: @item.OriginalDescription</small>
+                                            }
+                                        </td>
+                                        <td>@item.Category?.CategoryName</td>
+                                        <td>@item.Quantity</td>
+                                        <td>@string.Format("${0:N2}", item.UnitPrice ?? 0)</td>
+                                        <td>@string.Format("${0:N2}", item.TotalPrice)</td>
+                                        <td>
+                                            @if (item.IsDeductible == true)
+                                            {
+                                                <span class="badge bg-success">Deducible</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">No Deducible</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.ValidationNotes))
+                                            {
+                                                <small class="text-muted">@item.ValidationNotes</small>
+                                            }
+                                        </td>
+                                        @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                                        {
+                                            <td>
+                                                @{
+                                                    var productName = item.Product?.ProductName ?? item.ItemDescription ?? "";
+                                                    var brand = item.Product?.Brand ?? "";
+                                                    var productId = item.ProductId?.ToString() ?? "null";
+                                                    var isDeductible = item.IsDeductible?.ToString().ToLower() ?? "false";
+                                                }
+                                                <button type="button" class="btn btn-sm btn-warning me-1" onclick="editItem(@item.ItemId, '@productName.Replace("'", "\\'"))', '@brand.Replace("'", "\\'"))', @item.Quantity, @item.UnitPrice, @item.TotalPrice, @productId, @isDeductible)" title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(@item.ItemId)" title="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="@(Model.ValidationStatus == "Pending" && User.IsInRole("Admin") ? "8" : "7")" class="text-center text-muted">
+                                        No hay productos agregados. Use el botón "Agregar Producto" para empezar.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        @if (!string.IsNullOrEmpty(Model.TicketImagePath))
+        {
+            <div class="card shadow mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Imagen del Ticket</h5>
+                    @if (Model.ValidationStatus == "Pending" && User.IsInRole("Admin"))
+                    {
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="processWithOCR()" id="btnOCR">
+                                <i class="bi bi-upc-scan"></i> OCR Tradicional
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="processWithClaudeAI()" id="btnClaudeAI">
+                                <i class="bi bi-stars"></i> Analizar con IA
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div class="card-body text-center">
+                    <img src="@Model.TicketImagePath" class="img-fluid rounded" alt="Ticket Image" id="ticketImage" />
+                    <div id="ocrResult" class="mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        }
+
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Información Adicional</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-6">Creado:</dt>
+                    <dd class="col-sm-6">@Model.CreatedAt?.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-6">Actualizado:</dt>
+                    <dd class="col-sm-6">@Model.UpdatedAt?.ToString("dd/MM/yyyy")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar campo del ticket -->
+<div class="modal fade" id="editTicketFieldModal" tabindex="-1" aria-labelledby="editTicketFieldModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="editTicketFieldModalLabel">
+                    <i class="bi bi-pencil"></i> Editar Campo del Ticket
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editFieldName" />
+
+                <div class="mb-3" id="fieldInputContainer">
+                    <label for="editFieldValue" class="form-label" id="fieldLabel">Valor</label>
+                    <input type="text" class="form-control" id="editFieldValue" />
+                    <small class="text-muted" id="fieldHelpText"></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveTicketField()" id="btnSaveField">
+                    <i class="bi bi-check-circle"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar item -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="editItemModalLabel">
+                    <i class="bi bi-pencil"></i> Editar Item del Gasto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editItemId" />
+                <input type="hidden" id="editProductId" />
+
+                <div class="mb-3">
+                    <label for="editProductName" class="form-label">Producto</label>
+                    <input type="text" class="form-control" id="editProductName" readonly />
+                    <small class="text-muted">Para cambiar el producto, elimina este item y agrega uno nuevo</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editQuantity" class="form-label">Cantidad</label>
+                    <input type="number" class="form-control" id="editQuantity" min="1" step="1" required />
+                </div>
+
+                <div class="mb-3">
+                    <label for="editUnitPrice" class="form-label">Precio Unitario</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="editUnitPrice" min="0" step="0.01" required />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editTotalPrice" class="form-label">Total</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="editTotalPrice" readonly />
+                    </div>
+                    <small class="text-muted">Se calcula automáticamente: Cantidad × Precio Unitario</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editIsDeductible" class="form-label">Estado del Producto</label>
+                    <select class="form-select" id="editIsDeductible" required>
+                        <option value="true">Deducible</option>
+                        <option value="false">No Deducible</option>
+                    </select>
+                    <small class="text-muted">Puedes cambiar manualmente el estado del producto</small>
+                </div>
+
+                <div id="editValidationResult" class="alert" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveItemChanges()" id="btnSaveChanges">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let selectedProduct = null;
+    let searchTimeout = null;
+
+    // Toggle formulario de agregar producto
+    function toggleAddProductForm() {
+        const form = document.getElementById('addProductForm');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            document.getElementById('productSearch').focus();
+        } else {
+            form.style.display = 'none';
+            clearForm();
+        }
+    }
+
+    // Limpiar formulario
+    function clearForm() {
+        document.getElementById('productSearch').value = '';
+        document.getElementById('productQuantity').value = '1';
+        document.getElementById('productUnitPrice').value = '';
+        document.getElementById('productTotal').value = '';
+        document.getElementById('searchResults').style.display = 'none';
+        document.getElementById('validationResult').style.display = 'none';
+        document.getElementById('btnAddProduct').disabled = true;
+        selectedProduct = null;
+    }
+
+    // Búsqueda de productos en tiempo real
+    document.getElementById('productSearch')?.addEventListener('input', function (e) {
+        const query = e.target.value.trim();
+
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        if (query.length < 2) {
+            document.getElementById('searchResults').style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/products/search?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displaySearchResults(data);
+                })
+                .catch(error => {
+                    console.error('Error buscando productos:', error);
+                });
+        }, 300);
+    });
+
+    // Mostrar resultados de búsqueda
+    function displaySearchResults(products) {
+        const resultsDiv = document.getElementById('searchResults');
+        const searchQuery = document.getElementById('productSearch').value.trim();
+
+        if (!products || products.length === 0) {
+            resultsDiv.innerHTML = `
+                <div class="list-group-item text-center">
+                    <div class="text-muted mb-2">No se encontraron productos en la base de datos</div>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="analyzeProductWithAI('${escapeHtml(searchQuery)}')">
+                        <i class="bi bi-stars"></i> Analizar con IA
+                    </button>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+            return;
+        }
+
+        let html = '';
+        products.forEach(product => {
+            const deductibleBadge = product.isDeductible
+                ? '<span class="badge bg-success">Deducible</span>'
+                : '<span class="badge bg-danger">No Deducible</span>';
+
+            const aliases = product.matchedAliases && product.matchedAliases.length > 0
+                ? `<br><small class="text-muted">También: ${product.matchedAliases.join(', ')}</small>`
+                : '';
+
+            html += `
+                <a href="#" class="list-group-item list-group-item-action" onclick="selectProduct(event, ${product.productId}, '${escapeHtml(product.productName)}', '${escapeHtml(product.brand || '')}', '${escapeHtml(product.categoryName)}')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${product.productName}</strong>
+                            ${product.brand ? `<br><small class="text-muted">${product.brand}</small>` : ''}
+                            ${aliases}
+                        </div>
+                        <div class="text-end">
+                            ${deductibleBadge}
+                            <br><small class="text-muted">${product.categoryName}</small>
+                        </div>
+                    </div>
+                </a>
+            `;
+        });
+
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+    }
+
+    // Seleccionar producto
+    function selectProduct(event, productId, productName, brand, categoryName) {
+        event.preventDefault();
+
+        selectedProduct = {
+            productId: productId,
+            productName: productName,
+            brand: brand,
+            categoryName: categoryName
+        };
+
+        const displayName = brand ? `${productName} - ${brand}` : productName;
+        document.getElementById('productSearch').value = displayName;
+        document.getElementById('searchResults').style.display = 'none';
+
+        // Habilitar campos de precio
+        document.getElementById('productUnitPrice').disabled = false;
+        document.getElementById('productQuantity').disabled = false;
+    }
+
+    // Calcular total automáticamente
+    document.getElementById('productQuantity')?.addEventListener('input', calculateTotal);
+    document.getElementById('productUnitPrice')?.addEventListener('input', calculateTotal);
+
+    function calculateTotal() {
+        const quantity = parseFloat(document.getElementById('productQuantity').value) || 0;
+        const unitPrice = parseFloat(document.getElementById('productUnitPrice').value) || 0;
+        const total = quantity * unitPrice;
+
+        document.getElementById('productTotal').value = total.toFixed(2);
+
+        // Si hay un producto seleccionado y total > 0, validar
+        if (selectedProduct && total > 0) {
+            validateProduct();
+        }
+    }
+
+    // Validar producto
+    function validateProduct() {
+        if (!selectedProduct) return;
+
+        const total = parseFloat(document.getElementById('productTotal').value) || 0;
+
+        fetch('/api/products/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                productId: selectedProduct.productId,
+                amount: total,
+                hasReceipt: true
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                displayValidationResult(data);
+            })
+            .catch(error => {
+                console.error('Error validando producto:', error);
+            });
+    }
+
+    // Mostrar resultado de validación
+    function displayValidationResult(result) {
+        const resultDiv = document.getElementById('validationResult');
+        const btnAdd = document.getElementById('btnAddProduct');
+
+        let alertClass = result.isDeductible ? 'alert-success' : 'alert-danger';
+        let statusIcon = result.isDeductible ? '✓' : '✗';
+
+        let html = `
+            <strong>${statusIcon} ${result.status}</strong>
+            <div class="mt-2">
+                <strong>Producto:</strong> ${result.productName} ${result.brand ? '- ' + result.brand : ''}<br>
+                <strong>Categoría:</strong> ${result.categoryName}<br>
+                <strong>Deducible:</strong> ${result.isDeductible ? 'Sí' : 'No'}
+            </div>
+        `;
+
+        if (result.validationMessages && result.validationMessages.length > 0) {
+            html += '<div class="mt-2"><strong>Notas:</strong><ul class="mb-0">';
+            result.validationMessages.forEach(msg => {
+                html += `<li>${msg}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        resultDiv.className = `alert ${alertClass}`;
+        resultDiv.innerHTML = html;
+        resultDiv.style.display = 'block';
+
+        // Habilitar botón de agregar
+        btnAdd.disabled = false;
+    }
+
+    // Agregar producto al ticket
+    function addProductToTicket() {
+        if (!selectedProduct) return;
+
+        const ticketId = @Model.TicketId;
+        const originalDescription = document.getElementById('productSearch').value;
+        const quantity = parseInt(document.getElementById('productQuantity').value) || 1;
+        const unitPrice = parseFloat(document.getElementById('productUnitPrice').value) || 0;
+        const totalPrice = parseFloat(document.getElementById('productTotal').value) || 0;
+
+        const requestData = {
+            ticketId: ticketId,
+            productId: selectedProduct.productId,
+            itemDescription: selectedProduct.productName,
+            originalDescription: originalDescription,
+            quantity: quantity,
+            unitPrice: unitPrice,
+            totalPrice: totalPrice
+        };
+
+        fetch('/api/expenseitems/add-with-validation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.itemId) {
+                    // Recargar la página para mostrar el nuevo item
+                    location.reload();
+                } else {
+                    alert('Error al agregar el producto');
+                }
+            })
+            .catch(error => {
+                console.error('Error agregando producto:', error);
+                alert('Error al agregar el producto');
+            });
+    }
+
+    // Analizar producto con IA
+    async function analyzeProductWithAI(productName) {
+        const resultsDiv = document.getElementById('searchResults');
+        const validationResult = document.getElementById('validationResult');
+
+        // Mostrar loading
+        resultsDiv.innerHTML = `
+            <div class="list-group-item text-center">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Analizando con Claude AI...
+            </div>
+        `;
+
+        try {
+            const response = await fetch('/api/products/analyze-with-ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ productName: productName })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Ocultar resultados de búsqueda
+                resultsDiv.style.display = 'none';
+
+                // Mostrar resultado de IA en el área de validación
+                const alertClass = result.isDeductible ? 'alert-success' : 'alert-danger';
+                const statusIcon = result.isDeductible ? '✅' : '❌';
+                const confidencePercent = (result.confidence * 100).toFixed(0);
+
+                validationResult.className = `alert ${alertClass}`;
+                validationResult.innerHTML = `
+                    <div class="d-flex align-items-start">
+                        <div class="me-3" style="font-size: 2rem;">${statusIcon}</div>
+                        <div class="flex-grow-1">
+                            <strong>Análisis con IA completado</strong>
+                            <div class="mt-2">
+                                <strong>Producto:</strong> ${result.productName}<br>
+                                <strong>Categoría:</strong> ${result.category}<br>
+                                <strong>Estado:</strong> ${result.isDeductible ? 'Deducible' : 'No Deducible'}<br>
+                                <strong>Confianza:</strong> ${confidencePercent}%
+                                <div class="progress mt-1" style="height: 8px;">
+                                    <div class="progress-bar ${result.isDeductible ? 'bg-success' : 'bg-danger'}"
+                                         style="width: ${confidencePercent}%"></div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <strong>Razón:</strong>
+                                <p class="mb-1">${result.reason}</p>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted"><i class="bi bi-stars"></i> Analizado con Claude AI</small>
+                            </div>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <small><i class="bi bi-exclamation-triangle"></i> <strong>Nota:</strong> Este producto no está en la base de datos.
+                                Puedes agregarlo manualmente con esta información de la IA como referencia.</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                validationResult.style.display = 'block';
+
+                // Actualizar el campo de búsqueda con el nombre analizado
+                document.getElementById('productSearch').value = result.productName;
+
+                // Deshabilitar el botón de agregar porque no hay producto seleccionado de la BD
+                document.getElementById('btnAddProduct').disabled = true;
+
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="list-group-item text-center text-danger">
+                        <i class="bi bi-x-circle"></i> ${result.message || 'Error al analizar el producto'}
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error analizando producto con IA:', error);
+            resultsDiv.innerHTML = `
+                <div class="list-group-item text-center text-danger">
+                    <i class="bi bi-x-circle"></i> Error al comunicarse con el servicio de IA
+                </div>
+            `;
+        }
+    }
+
+    // Función auxiliar para escapar HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Cerrar resultados de búsqueda al hacer click fuera
+    document.addEventListener('click', function (e) {
+        const searchInput = document.getElementById('productSearch');
+        const searchResults = document.getElementById('searchResults');
+
+        if (searchInput && searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // Eliminar item del ticket
+    function deleteItem(itemId) {
+        if (!confirm('¿Está seguro de eliminar este producto del ticket?')) {
+            return;
+        }
+
+        fetch(`/api/expenseitems/${itemId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                // Recargar la página para mostrar cambios
+                location.reload();
+            } else {
+                alert('Error al eliminar el producto');
+            }
+        })
+        .catch(error => {
+            console.error('Error eliminando producto:', error);
+            alert('Error al eliminar el producto');
+        });
+    }
+
+    // Procesar imagen con OCR Tradicional
+    async function processWithOCR() {
+        const btnOCR = document.getElementById('btnOCR');
+        const ocrResultDiv = document.getElementById('ocrResult');
+        const imagePath = '@Model.TicketImagePath';
+
+        // Deshabilitar botón y mostrar loading
+        btnOCR.disabled = true;
+        btnOCR.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+        ocrResultDiv.style.display = 'block';
+        ocrResultDiv.className = 'mt-3 alert alert-info';
+        ocrResultDiv.innerHTML = '<i class="bi bi-hourglass-split"></i> Extrayendo texto con OCR tradicional (Tesseract)...';
+
+        try {
+            // Descargar la imagen como blob
+            const imageResponse = await fetch(imagePath);
+            const imageBlob = await imageResponse.blob();
+
+            // Crear FormData para enviar la imagen
+            const formData = new FormData();
+            formData.append('image', imageBlob, 'ticket.jpg');
+
+            // Llamar al endpoint de OCR tradicional
+            const response = await fetch('/api/ocr/process-and-match', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.matchedItems && data.matchedItems.length > 0) {
+                // Mostrar resultado del OCR tradicional
+                ocrResultDiv.className = 'mt-3 alert alert-success';
+                ocrResultDiv.innerHTML = `
+                    <strong><i class="bi bi-check-circle"></i> OCR Completado</strong><br>
+                    <small>Vendedor: ${data.vendor || 'N/A'}</small><br>
+                    <small>Fecha: ${data.ticketDate || 'N/A'}</small><br>
+                    <small>Total: ${data.totalAmount ? '$' + data.totalAmount.toFixed(2) : 'N/A'}</small><br>
+                    <hr>
+                    <small>Se encontraron ${data.matchedItems.length} items</small><br>
+                    <small class="text-info">Items matcheados: ${data.matchedItems.filter(i => i.isMatched).length}</small><br>
+                    <small class="text-muted">Revise los resultados y agregue manualmente si es necesario</small>
+                `;
+
+                // Mostrar texto OCR extraído
+                if (data.rawOcrText) {
+                    ocrResultDiv.innerHTML += `<hr><small><strong>Texto extraído:</strong></small><pre class="mt-2" style="max-height: 200px; overflow-y: auto; font-size: 0.8em;">${data.rawOcrText}</pre>`;
+                }
+
+                btnOCR.disabled = false;
+                btnOCR.innerHTML = '<i class="bi bi-upc-scan"></i> OCR Tradicional';
+            } else {
+                ocrResultDiv.className = 'mt-3 alert alert-warning';
+                ocrResultDiv.innerHTML = `
+                    <strong><i class="bi bi-exclamation-triangle"></i> No se encontraron items</strong><br>
+                    <small>El OCR no pudo extraer información útil del ticket.</small>
+                `;
+                btnOCR.disabled = false;
+                btnOCR.innerHTML = '<i class="bi bi-upc-scan"></i> OCR Tradicional';
+            }
+        } catch (error) {
+            console.error('Error procesando con OCR:', error);
+            ocrResultDiv.className = 'mt-3 alert alert-danger';
+            ocrResultDiv.innerHTML = `
+                <strong><i class="bi bi-x-circle"></i> Error al procesar</strong><br>
+                <small>${error.message}</small>
+            `;
+            btnOCR.disabled = false;
+            btnOCR.innerHTML = '<i class="bi bi-upc-scan"></i> OCR Tradicional';
+        }
+    }
+
+    // Procesar imagen con Claude AI
+    async function processWithClaudeAI() {
+        const btnClaudeAI = document.getElementById('btnClaudeAI');
+        const ocrResultDiv = document.getElementById('ocrResult');
+        const imagePath = '@Model.TicketImagePath';
+
+        // Deshabilitar botón y mostrar loading
+        btnClaudeAI.disabled = true;
+        btnClaudeAI.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analizando...';
+        ocrResultDiv.style.display = 'block';
+        ocrResultDiv.className = 'mt-3 alert alert-info';
+        ocrResultDiv.innerHTML = '<i class="bi bi-hourglass-split"></i> Analizando recibo con Claude AI Vision...';
+
+        try {
+            // Descargar la imagen como blob
+            const imageResponse = await fetch(imagePath);
+            const imageBlob = await imageResponse.blob();
+
+            // Crear FormData para enviar la imagen
+            const formData = new FormData();
+            formData.append('image', imageBlob, 'ticket.jpg');
+
+            // Llamar al endpoint de Claude Vision
+            const response = await fetch('/api/ocr/process-with-claude', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.products && data.products.length > 0) {
+                // Mostrar resumen
+                ocrResultDiv.className = 'mt-3 alert alert-success';
+                const deductibleCount = data.products.filter(p => p.isDeductible).length;
+                const nonDeductibleCount = data.products.filter(p => !p.isDeductible).length;
+
+                ocrResultDiv.innerHTML = `
+                    <strong><i class="bi bi-check-circle"></i> Recibo Analizado con Claude AI</strong><br>
+                    <small>Vendedor: ${data.vendor || 'N/A'}</small><br>
+                    <small>Fecha: ${data.ticketDate || 'N/A'}</small><br>
+                    <small>Total: ${data.totalAmount ? '$' + data.totalAmount.toFixed(2) : 'N/A'}</small><br>
+                    <hr>
+                    <small>Se encontraron ${data.products.length} productos</small><br>
+                    <small class="text-success">✓ ${deductibleCount} Deducibles</small><br>
+                    <small class="text-danger">✗ ${nonDeductibleCount} No Deducibles</small><br>
+                    <small class="text-muted">Los productos se mostrarán a continuación...</small>
+                `;
+
+                // Mostrar tabla de productos encontrados
+                let productsTableHtml = '<div class="mt-3"><table class="table table-sm"><thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Estado</th><th>Razón</th></tr></thead><tbody>';
+
+                data.products.forEach(product => {
+                    const badgeClass = product.isDeductible ? 'bg-success' : 'bg-danger';
+                    const badgeText = product.isDeductible ? 'Deducible' : 'No Deducible';
+                    productsTableHtml += `
+                        <tr>
+                            <td>${product.name}</td>
+                            <td>${product.quantity}</td>
+                            <td>$${product.totalPrice.toFixed(2)}</td>
+                            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                            <td><small>${product.reason}</small></td>
+                        </tr>
+                    `;
+                });
+
+                productsTableHtml += '</tbody></table></div>';
+                ocrResultDiv.innerHTML += productsTableHtml;
+
+                // Botón para confirmar y agregar productos
+                ocrResultDiv.innerHTML += `
+                    <button class="btn btn-primary mt-3" onclick="confirmAndAddProducts(${JSON.stringify(data.products).replace(/"/g, '&quot;')})">
+                        <i class="bi bi-check-circle"></i> Confirmar y Agregar Productos al Ticket
+                    </button>
+                `;
+
+                btnClaudeAI.disabled = false;
+                btnClaudeAI.innerHTML = '<i class="bi bi-stars"></i> Analizar con IA';
+
+            } else {
+                ocrResultDiv.className = 'mt-3 alert alert-warning';
+                ocrResultDiv.innerHTML = `
+                    <strong><i class="bi bi-exclamation-triangle"></i> ${data.message || 'No se pudieron extraer productos'}</strong><br>
+                    <small>Intenta agregar los productos manualmente.</small>
+                `;
+                btnClaudeAI.disabled = false;
+                btnClaudeAI.innerHTML = '<i class="bi bi-stars"></i> Analizar con IA';
+            }
+        } catch (error) {
+            console.error('Error procesando con Claude AI:', error);
+            ocrResultDiv.className = 'mt-3 alert alert-danger';
+            ocrResultDiv.innerHTML = `
+                <strong><i class="bi bi-x-circle"></i> Error al procesar</strong><br>
+                <small>${error.message}</small>
+            `;
+            btnClaudeAI.disabled = false;
+            btnClaudeAI.innerHTML = '<i class="bi bi-stars"></i> Analizar con IA';
+        }
+    }
+
+    // ========== FUNCIONES DE EDICIÓN DE ITEMS ==========
+
+    let editModal = null;
+    let editTicketFieldModal = null;
+
+    // Inicializar modales cuando el documento esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+        editTicketFieldModal = new bootstrap.Modal(document.getElementById('editTicketFieldModal'));
+
+        // Agregar listeners para calcular total al editar
+        document.getElementById('editQuantity').addEventListener('input', calculateEditTotal);
+        document.getElementById('editUnitPrice').addEventListener('input', calculateEditTotal);
+    });
+
+    // Abrir modal de edición con datos del item
+    function editItem(itemId, productName, brand, quantity, unitPrice, totalPrice, productId, isDeductible) {
+        // Limpiar espacios y manejar valores null
+        productName = productName || '';
+        brand = brand || '';
+
+        // Establecer valores en el modal
+        document.getElementById('editItemId').value = itemId;
+        document.getElementById('editProductId').value = (productId === null || productId === 'null') ? '' : productId;
+
+        const displayName = (brand && brand !== 'null' && brand !== '') ? `${productName} - ${brand}` : productName;
+        document.getElementById('editProductName').value = displayName;
+
+        document.getElementById('editQuantity').value = quantity || 1;
+        document.getElementById('editUnitPrice').value = unitPrice || 0;
+        document.getElementById('editTotalPrice').value = totalPrice || 0;
+
+        // Establecer el valor de IsDeductible en el select
+        document.getElementById('editIsDeductible').value = isDeductible === true || isDeductible === 'true' ? 'true' : 'false';
+
+        // Limpiar mensaje de validación
+        document.getElementById('editValidationResult').style.display = 'none';
+
+        // Abrir modal
+        editModal.show();
+    }
+
+    // Calcular total en el modal de edición
+    function calculateEditTotal() {
+        const quantity = parseFloat(document.getElementById('editQuantity').value) || 0;
+        const unitPrice = parseFloat(document.getElementById('editUnitPrice').value) || 0;
+        const total = quantity * unitPrice;
+
+        document.getElementById('editTotalPrice').value = total.toFixed(2);
+
+        // Validar producto con nuevos valores
+        if (total > 0) {
+            validateEditedProduct();
+        }
+    }
+
+    // Validar producto editado
+    function validateEditedProduct() {
+        const productId = document.getElementById('editProductId').value;
+        const total = parseFloat(document.getElementById('editTotalPrice').value) || 0;
+
+        if (!productId || total <= 0) return;
+
+        fetch('/api/products/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                productId: parseInt(productId),
+                amount: total,
+                hasReceipt: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayEditValidationResult(data);
+        })
+        .catch(error => {
+            console.error('Error validando producto:', error);
+        });
+    }
+
+    // Mostrar resultado de validación en modal de edición
+    function displayEditValidationResult(result) {
+        const resultDiv = document.getElementById('editValidationResult');
+
+        let alertClass = result.isDeductible ? 'alert-success' : 'alert-danger';
+        let statusIcon = result.isDeductible ? '✓' : '✗';
+
+        let html = `
+            <strong>${statusIcon} ${result.status}</strong>
+            <div class="mt-2">
+                <strong>Categoría:</strong> ${result.categoryName}<br>
+                <strong>Deducible:</strong> ${result.isDeductible ? 'Sí' : 'No'}
+            </div>
+        `;
+
+        if (result.validationMessages && result.validationMessages.length > 0) {
+            html += '<div class="mt-2"><strong>Notas:</strong><ul class="mb-0">';
+            result.validationMessages.forEach(msg => {
+                html += `<li>${msg}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        resultDiv.className = `alert ${alertClass}`;
+        resultDiv.innerHTML = html;
+        resultDiv.style.display = 'block';
+    }
+
+    // Guardar cambios del item editado
+    async function saveItemChanges() {
+        const itemId = parseInt(document.getElementById('editItemId').value);
+        const quantity = parseInt(document.getElementById('editQuantity').value);
+        const unitPrice = parseFloat(document.getElementById('editUnitPrice').value);
+        const totalPrice = parseFloat(document.getElementById('editTotalPrice').value);
+        const isDeductible = document.getElementById('editIsDeductible').value === 'true';
+
+        // Validar datos
+        if (!itemId || quantity < 1 || unitPrice < 0) {
+            alert('Por favor, completa todos los campos correctamente');
+            return;
+        }
+
+        const btnSave = document.getElementById('btnSaveChanges');
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+
+        try {
+            const response = await fetch(`/api/expenseitems/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    itemId: itemId,
+                    quantity: quantity,
+                    unitPrice: unitPrice,
+                    totalPrice: totalPrice,
+                    isDeductible: isDeductible
+                })
+            });
+
+            if (response.ok) {
+                // Cerrar modal y recargar página
+                editModal.hide();
+                location.reload();
+            } else {
+                const errorData = await response.json();
+                alert('Error al guardar cambios: ' + (errorData.message || 'Error desconocido'));
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="bi bi-check-circle"></i> Guardar Cambios';
+            }
+        } catch (error) {
+            console.error('Error guardando cambios:', error);
+            alert('Error al guardar cambios: ' + error.message);
+            btnSave.disabled = false;
+            btnSave.innerHTML = '<i class="bi bi-check-circle"></i> Guardar Cambios';
+        }
+    }
+
+    // ========== FUNCIÓN PARA AGREGAR PRODUCTOS DE CLAUDE ==========
+
+    async function confirmAndAddProducts(productsJson) {
+        // Parse products from JSON string
+        const products = typeof productsJson === 'string' ? JSON.parse(productsJson) : productsJson;
+
+        const ticketId = @Model.TicketId;
+        const ocrResultDiv = document.getElementById('ocrResult');
+
+        ocrResultDiv.className = 'mt-3 alert alert-info';
+        ocrResultDiv.innerHTML = '<i class="bi bi-hourglass-split"></i> Agregando productos al ticket...';
+
+        let addedCount = 0;
+        let matchedProductsCount = 0;
+        let aiOnlyCount = 0;
+
+        for (const product of products) {
+            try {
+                // Buscar el producto en la base de datos por nombre
+                const searchResponse = await fetch(`/api/products/search?query=${encodeURIComponent(product.name)}`);
+                const searchResults = await searchResponse.json();
+
+                let requestData = {};
+
+                if (searchResults && searchResults.length > 0) {
+                    // Caso 1: Se encontró match en la base de datos
+                    const matchedProduct = searchResults[0];
+                    matchedProductsCount++;
+
+                    requestData = {
+                        ticketId: ticketId,
+                        productId: matchedProduct.productId,
+                        itemDescription: matchedProduct.productName,
+                        originalDescription: product.name,
+                        quantity: product.quantity,
+                        unitPrice: product.unitPrice || (product.totalPrice / product.quantity),
+                        totalPrice: product.totalPrice
+                    };
+                } else {
+                    // Caso 2: NO se encontró match - Agregar usando solo la info de Claude AI
+                    aiOnlyCount++;
+
+                    requestData = {
+                        ticketId: ticketId,
+                        productId: null, // Sin ProductId
+                        itemDescription: product.name,
+                        originalDescription: product.name,
+                        quantity: product.quantity,
+                        unitPrice: product.unitPrice || (product.totalPrice / product.quantity),
+                        totalPrice: product.totalPrice,
+                        categoryId: null, // Sin categoría específica
+                        isDeductible: product.isDeductible,
+                        validationNotes: product.reason || 'Analizado por Claude AI'
+                    };
+                }
+
+                // Agregar el producto al ticket (con o sin ProductId)
+                const addResponse = await fetch('/api/expenseitems/add-with-validation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (addResponse.ok) {
+                    addedCount++;
+                }
+            } catch (error) {
+                console.error('Error agregando producto:', error);
+            }
+        }
+
+        // Mostrar resultado final
+        ocrResultDiv.className = 'mt-3 alert alert-success';
+        ocrResultDiv.innerHTML = `
+            <strong><i class="bi bi-check-circle"></i> ¡Productos Agregados!</strong><br>
+            <small>Se agregaron ${addedCount} de ${products.length} productos al ticket.</small><br>
+            <small class="text-success">✓ ${matchedProductsCount} productos matcheados con la base de datos.</small><br>
+            <small class="text-info">✓ ${aiOnlyCount} productos agregados solo con análisis de IA.</small><br>
+            <small class="text-muted">Recargando página...</small>
+        `;
+
+        // Recargar la página después de 2 segundos
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    }
+
+    // ========== FUNCIONES DE EDICIÓN DE CAMPOS DEL TICKET ==========
+
+    // Abrir modal para editar campo del ticket
+    function editTicketField(fieldName, currentValue) {
+        document.getElementById('editFieldName').value = fieldName;
+
+        const fieldLabel = document.getElementById('fieldLabel');
+        const fieldInput = document.getElementById('editFieldValue');
+        const fieldHelp = document.getElementById('fieldHelpText');
+
+        // Configurar el campo según el tipo
+        switch (fieldName) {
+            case 'vendor':
+                fieldLabel.textContent = 'Vendedor';
+                fieldInput.type = 'text';
+                fieldInput.value = currentValue;
+                fieldHelp.textContent = 'Nombre del establecimiento o vendedor';
+                break;
+
+            case 'ticketDate':
+                fieldLabel.textContent = 'Fecha del Ticket';
+                fieldInput.type = 'date';
+                fieldInput.value = currentValue;
+                fieldHelp.textContent = 'Fecha que aparece en el ticket físico';
+                break;
+
+            case 'totalAmount':
+                fieldLabel.textContent = 'Monto Total';
+                fieldInput.type = 'number';
+                fieldInput.step = '0.01';
+                fieldInput.min = '0';
+                fieldInput.value = currentValue;
+                fieldHelp.textContent = 'Monto total del ticket (debe coincidir con la suma de items)';
+                break;
+
+            case 'notes':
+                fieldLabel.textContent = 'Notas';
+                // Crear textarea si no existe
+                const container = document.getElementById('fieldInputContainer');
+                if (fieldInput.tagName !== 'TEXTAREA') {
+                    const textarea = document.createElement('textarea');
+                    textarea.id = 'editFieldValue';
+                    textarea.className = 'form-control';
+                    textarea.rows = 4;
+                    fieldInput.replaceWith(textarea);
+                }
+                document.getElementById('editFieldValue').value = currentValue;
+                fieldHelp.textContent = 'Notas adicionales sobre el ticket';
+                break;
+        }
+
+        editTicketFieldModal.show();
+    }
+
+    // Guardar campo editado del ticket
+    async function saveTicketField() {
+        const fieldName = document.getElementById('editFieldName').value;
+        const fieldValue = document.getElementById('editFieldValue').value;
+
+        // Validar datos
+        if (!fieldValue && fieldName !== 'notes') {
+            alert('Por favor, ingresa un valor válido');
+            return;
+        }
+
+        const btnSave = document.getElementById('btnSaveField');
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+
+        try {
+            const ticketId = @Model.TicketId;
+            const updateData = {};
+
+            // Preparar datos según el campo
+            switch (fieldName) {
+                case 'vendor':
+                    updateData.vendor = fieldValue;
+                    break;
+                case 'ticketDate':
+                    updateData.ticketDate = fieldValue;
+                    break;
+                case 'totalAmount':
+                    updateData.totalAmount = parseFloat(fieldValue);
+                    break;
+                case 'notes':
+                    updateData.notes = fieldValue;
+                    break;
+            }
+
+            const response = await fetch(`/api/expensetickets/${ticketId}/update-field`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                // Cerrar modal y recargar página
+                editTicketFieldModal.hide();
+                location.reload();
+            } else {
+                const errorData = await response.json();
+                alert('Error al guardar: ' + (errorData.message || 'Error desconocido'));
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="bi bi-check-circle"></i> Guardar';
+            }
+        } catch (error) {
+            console.error('Error guardando campo:', error);
+            alert('Error al guardar: ' + error.message);
+            btnSave.disabled = false;
+            btnSave.innerHTML = '<i class="bi bi-check-circle"></i> Guardar';
+        }
+    }
+</script>
+}

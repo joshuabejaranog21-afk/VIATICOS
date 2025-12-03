@@ -1,0 +1,340 @@
+@{
+    ViewData["Title"] = "Phone Scanner";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-camera"></i> Phone Scanner</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a asp-controller="Home" asp-action="EmployeeDashboard" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Escanea productos en la tienda para verificar si son deducibles ANTES de comprarlos.
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Cámara</h6>
+                </div>
+                <div class="card-body">
+                    <div id="camera-container" class="text-center">
+                        <video id="video" width="100%" autoplay playsinline style="max-width: 640px; border-radius: 8px; background: #000;"></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                    </div>
+
+                    <div class="mt-3 text-center">
+                        <button id="startCamera" class="btn btn-primary btn-lg">
+                            <i class="bi bi-camera-video"></i> Iniciar Cámara
+                        </button>
+                        <button id="captureBtn" class="btn btn-success btn-lg" style="display: none;">
+                            <i class="bi bi-camera"></i> Capturar Foto
+                        </button>
+                        <button id="stopCamera" class="btn btn-danger btn-lg" style="display: none;">
+                            <i class="bi bi-camera-video-off"></i> Detener Cámara
+                        </button>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="form-group">
+                            <label for="productTextInput">O escribe el nombre del producto:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="productTextInput" placeholder="Ej: Laptop Dell, Café Starbucks, Gasolina">
+                                <button class="btn btn-primary" id="checkTextBtn">
+                                    <i class="bi bi-search"></i> Verificar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Resultado</h6>
+                </div>
+                <div class="card-body" id="resultContainer">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-info-circle fs-1"></i>
+                        <p class="mt-2">Escanea o escribe un producto para verificar si es deducible.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mt-3">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">Categorías Deducibles</h6>
+                </div>
+                <div class="card-body">
+                    <div id="loadingCategories" class="text-center">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        Cargando categorías...
+                    </div>
+                    <ul id="categoriesList" class="list-unstyled" style="display: none;">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .result-card {
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+
+    .result-success {
+        background: #d4edda;
+        border: 2px solid #28a745;
+    }
+
+    .result-danger {
+        background: #f8d7da;
+        border: 2px solid #dc3545;
+    }
+
+    .confidence-badge {
+        font-size: 0.9em;
+        padding: 5px 10px;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let stream = null;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startCameraBtn = document.getElementById('startCamera');
+        const stopCameraBtn = document.getElementById('stopCamera');
+        const captureBtn = document.getElementById('captureBtn');
+        const checkTextBtn = document.getElementById('checkTextBtn');
+        const productTextInput = document.getElementById('productTextInput');
+        const resultContainer = document.getElementById('resultContainer');
+
+        // Cargar categorías deducibles
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                const categories = await response.json();
+                const deductibleCategories = categories.filter(c => c.isDeductible);
+
+                const categoriesList = document.getElementById('categoriesList');
+                const loadingDiv = document.getElementById('loadingCategories');
+
+                categoriesList.innerHTML = '';
+                deductibleCategories.forEach(cat => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<i class="bi bi-check-circle text-success"></i> ${cat.categoryName}`;
+                    li.className = 'mb-2';
+                    categoriesList.appendChild(li);
+                });
+
+                loadingDiv.style.display = 'none';
+                categoriesList.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                document.getElementById('loadingCategories').innerHTML = '<small class="text-danger">Error al cargar categorías</small>';
+            }
+        }
+
+        // Iniciar cámara
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment' // Usar cámara trasera en móviles
+                    }
+                });
+                video.srcObject = stream;
+                video.play();
+
+                startCameraBtn.style.display = 'none';
+                captureBtn.style.display = 'inline-block';
+                stopCameraBtn.style.display = 'inline-block';
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('No se pudo acceder a la cámara. Asegúrate de dar permisos.');
+            }
+        });
+
+        // Detener cámara
+        stopCameraBtn.addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+
+                startCameraBtn.style.display = 'inline-block';
+                captureBtn.style.display = 'none';
+                stopCameraBtn.style.display = 'none';
+            }
+        });
+
+        // Capturar foto y analizar
+        captureBtn.addEventListener('click', async () => {
+            // Capturar frame del video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Convertir a blob
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert('Error al capturar la imagen');
+                    return;
+                }
+
+                // Enviar a la API
+                await analyzeProduct(blob);
+            }, 'image/jpeg');
+        });
+
+        // Verificar producto por texto
+        checkTextBtn.addEventListener('click', async () => {
+            const productText = productTextInput.value.trim();
+            if (!productText) {
+                alert('Por favor escribe el nombre del producto');
+                return;
+            }
+
+            await checkProductByText(productText);
+        });
+
+        // Enter en el input
+        productTextInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkTextBtn.click();
+            }
+        });
+
+        // Analizar producto desde imagen
+        async function analyzeProduct(imageBlob) {
+            resultContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Analizando...</span>
+                    </div>
+                    <p class="mt-2">Analizando producto...</p>
+                </div>
+            `;
+
+            const formData = new FormData();
+            formData.append('image', imageBlob, 'product.jpg');
+
+            try {
+                const response = await fetch('/api/productscanner/scan-product', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                displayResult(result);
+            } catch (error) {
+                console.error('Error:', error);
+                resultContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Error al analizar el producto
+                    </div>
+                `;
+            }
+        }
+
+        // Verificar producto por texto
+        async function checkProductByText(productText) {
+            resultContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Verificando...</span>
+                    </div>
+                    <p class="mt-2">Verificando producto...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/productscanner/check-product', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productText: productText })
+                });
+
+                const result = await response.json();
+                displayResult(result);
+            } catch (error) {
+                console.error('Error:', error);
+                resultContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Error al verificar el producto
+                    </div>
+                `;
+            }
+        }
+
+        // Mostrar resultado
+        function displayResult(result) {
+            if (!result.success) {
+                resultContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> ${result.message}
+                    </div>
+                `;
+                return;
+            }
+
+            const resultClass = result.isDeductible ? 'result-success' : 'result-danger';
+            const icon = result.isDeductible ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger';
+            const status = result.isDeductible ? 'ES DEDUCIBLE' : 'NO ES DEDUCIBLE';
+
+            let html = `
+                <div class="result-card ${resultClass}">
+                    <h4><i class="bi ${icon}"></i> ${status}</h4>
+                    <hr>
+                    <p><strong>Producto:</strong> ${result.productName || 'Desconocido'}</p>
+                    <p><strong>Categoría:</strong> ${result.category || 'N/A'}</p>
+                    <p><strong>Razón:</strong> ${result.reason || 'N/A'}</p>
+            `;
+
+            if (result.estimatedAmount) {
+                html += `<p><strong>Precio estimado:</strong> $${result.estimatedAmount.toFixed(2)}</p>`;
+            }
+
+            if (result.restrictions) {
+                html += `
+                    <div class="alert alert-warning mt-2 mb-0">
+                        <small><strong>⚠️ Restricciones:</strong> ${result.restrictions}</small>
+                    </div>
+                `;
+            }
+
+            if (result.confidence) {
+                const confidenceClass = result.confidence > 80 ? 'bg-success' : result.confidence > 60 ? 'bg-warning' : 'bg-danger';
+                html += `
+                    <div class="mt-2">
+                        <span class="badge ${confidenceClass} confidence-badge">
+                            Confianza: ${result.confidence}%
+                        </span>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+
+            resultContainer.innerHTML = html;
+        }
+
+        // Cargar categorías al inicio
+        loadCategories();
+    </script>
+}

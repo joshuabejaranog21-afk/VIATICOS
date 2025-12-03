@@ -1,0 +1,127 @@
+@model IEnumerable<OneCardExpenseValidator.Infrastructure.Entities.ExpenseTicket>
+
+@{
+    ViewData["Title"] = "Tickets de Gastos";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-receipt-cutoff"></i> Tickets de Gastos</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Ticket
+        </a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <ul class="nav nav-pills card-header-pills">
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == null ? "active" : "")" asp-action="Index">
+                    Todos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == "Pending" ? "active" : "")" asp-action="Index" asp-route-status="Pending">
+                    <i class="bi bi-hourglass-split"></i> Pendientes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == "Approved" ? "active" : "")" asp-action="Index" asp-route-status="Approved">
+                    <i class="bi bi-check-circle"></i> Aprobados
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == "Rejected" ? "active" : "")" asp-action="Index" asp-route-status="Rejected">
+                    <i class="bi bi-x-circle"></i> Rechazados
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Ticket #</th>
+                        <th>Empleado</th>
+                        <th>Departamento</th>
+                        <th>Fecha Ticket</th>
+                        <th>Vendedor</th>
+                        <th>Monto Total</th>
+                        <th>Monto Deducible</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.TicketId">
+                                    @Html.DisplayFor(modelItem => item.TicketNumber)
+                                </a>
+                            </td>
+                            <td>@item.Employee?.FirstName @item.Employee?.LastName</td>
+                            <td>@item.Employee?.Department?.DepartmentName</td>
+                            <td>@item.TicketDate.ToString("dd/MM/yyyy")</td>
+                            <td>@Html.DisplayFor(modelItem => item.Vendor)</td>
+                            <td><strong>@string.Format("${0:N2}", item.TotalAmount)</strong></td>
+                            <td>
+                                @if (item.ValidationStatus == "Approved" && item.DeductibleAmount.HasValue)
+                                {
+                                    <strong class="text-success">@string.Format("${0:N2}", item.DeductibleAmount.Value)</strong>
+                                    @if (item.NonDeductibleAmount.HasValue && item.NonDeductibleAmount.Value > 0)
+                                    {
+                                        <br/>
+                                        <small class="text-danger">
+                                            <i class="bi bi-exclamation-triangle"></i> @string.Format("${0:N2}", item.NonDeductibleAmount.Value) no deducible
+                                        </small>
+                                    }
+                                }
+                                else
+                                {
+                                    <small class="text-muted">-</small>
+                                }
+                            </td>
+                            <td>
+                                @if (item.ValidationStatus == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                }
+                                else if (item.ValidationStatus == "Approved")
+                                {
+                                    <span class="badge bg-success">Aprobado</span>
+                                }
+                                else if (item.ValidationStatus == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rechazado</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Details" asp-route-id="@item.TicketId" class="btn btn-info" title="Ver Detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if (item.ValidationStatus == "Pending")
+                                    {
+                                        <a asp-action="Approve" asp-route-id="@item.TicketId" class="btn btn-success" title="Aprobar">
+                                            <i class="bi bi-check-circle"></i>
+                                        </a>
+                                        <a asp-action="Reject" asp-route-id="@item.TicketId" class="btn btn-danger" title="Rechazar">
+                                            <i class="bi bi-x-circle"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.TicketId" class="btn btn-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,170 @@
+@model OneCardExpenseValidator.Infrastructure.Entities.ExpenseTicket
+
+@{
+    ViewData["Title"] = "Aprobar Ticket";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 text-success"><i class="bi bi-check-circle"></i> Aprobar Ticket</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-info" role="alert">
+    <h4 class="alert-heading"><i class="bi bi-info-circle"></i> Confirmar Aprobación</h4>
+    <p>Está a punto de aprobar este ticket de gasto. Por favor revise la información y confirme.</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Resumen del Ticket</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Número de Ticket:</dt>
+                    <dd class="col-sm-8">@Model.TicketNumber</dd>
+
+                    <dt class="col-sm-4">Empleado:</dt>
+                    <dd class="col-sm-8">@Model.Employee?.FirstName @Model.Employee?.LastName</dd>
+
+                    <dt class="col-sm-4">Departamento:</dt>
+                    <dd class="col-sm-8">@Model.Employee?.Department?.DepartmentName</dd>
+
+                    <dt class="col-sm-4">Fecha del Ticket:</dt>
+                    <dd class="col-sm-8">@Model.TicketDate.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-4">Vendedor:</dt>
+                    <dd class="col-sm-8">@Model.Vendor</dd>
+
+                    <dt class="col-sm-4">Monto Total del Ticket:</dt>
+                    <dd class="col-sm-8">
+                        <strong class="fs-4">@string.Format("${0:N2}", Model.TotalAmount)</strong>
+                    </dd>
+
+                    @if (ViewBag.HasNonDeductibleItems == true)
+                    {
+                        <dt class="col-sm-4">Monto Deducible:</dt>
+                        <dd class="col-sm-8">
+                            <strong class="text-success fs-4">@string.Format("${0:N2}", (decimal)ViewBag.DeductibleAmount)</strong>
+                            <small class="text-muted d-block">Cantidad que pagará la compañía</small>
+                        </dd>
+
+                        <dt class="col-sm-4">Monto No Deducible:</dt>
+                        <dd class="col-sm-8">
+                            <strong class="text-danger fs-4">@string.Format("${0:N2}", (decimal)ViewBag.NonDeductibleAmount)</strong>
+                            <small class="text-muted d-block">Cantidad que pagará el empleado</small>
+                        </dd>
+                    }
+                    else
+                    {
+                        <dt class="col-sm-4">Monto a Reembolsar:</dt>
+                        <dd class="col-sm-8">
+                            <strong class="text-success fs-4">@string.Format("${0:N2}", Model.TotalAmount)</strong>
+                            <small class="text-muted d-block">Todos los productos son deducibles</small>
+                        </dd>
+                    }
+                </dl>
+
+                @if (Model.ExpenseItems != null && Model.ExpenseItems.Any())
+                {
+                    <hr />
+                    <h6>Items del Gasto</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                                <th>Cantidad</th>
+                                <th>Precio Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.ExpenseItems)
+                            {
+                                <tr class="@(item.IsDeductible == false ? "table-danger" : "")">
+                                    <td>
+                                        <strong>@(item.Product?.ProductName ?? item.ItemDescription)</strong>
+                                        @if (!string.IsNullOrEmpty(item.Product?.Brand))
+                                        {
+                                            <br/><small class="text-muted">@item.Product.Brand</small>
+                                        }
+                                    </td>
+                                    <td>@item.Category?.CategoryName</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.TotalPrice.ToString("C")</td>
+                                    <td>
+                                        @if (item.IsDeductible == true)
+                                        {
+                                            <span class="badge bg-success">Deducible</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">No Deducible</span>
+                                        }
+                                    </td>
+                                </tr>
+                                @if (item.IsDeductible == false && !string.IsNullOrEmpty(item.ValidationNotes))
+                                {
+                                    <tr class="table-danger">
+                                        <td colspan="5">
+                                            <small><i class="bi bi-info-circle"></i> <strong>Razón:</strong> @item.ValidationNotes</small>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Aprobar Ticket</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Approve" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.TicketId" />
+
+                    @if (ViewBag.HasNonDeductibleItems == true)
+                    {
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Atención: Ticket con Productos No Deducibles</h5>
+                            <p>Este ticket contiene productos que NO son deducibles:</p>
+                            <ul class="mb-0">
+                                <li><strong>Monto que reembolsará la compañía:</strong> <span class="text-success">@string.Format("${0:N2}", (decimal)ViewBag.DeductibleAmount)</span></li>
+                                <li><strong>Monto que pagará el empleado:</strong> <span class="text-danger">@string.Format("${0:N2}", (decimal)ViewBag.NonDeductibleAmount)</span></li>
+                            </ul>
+                            <hr/>
+                            <small>Al aprobar, estos montos se guardarán automáticamente y el empleado será notificado sobre los productos no deducibles.</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Al confirmar, este ticket será marcado como <strong>APROBADO</strong> y se registrará su aprobación automáticamente.
+                            <br/>
+                            <small>Todos los productos son deducibles. La compañía reembolsará el monto completo de <strong>@string.Format("${0:N2}", Model.TotalAmount)</strong></small>
+                        </div>
+                    }
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirmar Aprobación
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.TicketId" class="btn btn-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

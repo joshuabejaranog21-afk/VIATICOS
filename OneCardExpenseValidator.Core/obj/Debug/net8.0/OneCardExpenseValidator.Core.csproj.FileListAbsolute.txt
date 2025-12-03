@@ -1,0 +1,11 @@
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\bin\Debug\net8.0\OneCardExpenseValidator.Core.deps.json
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\bin\Debug\net8.0\OneCardExpenseValidator.Core.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\bin\Debug\net8.0\OneCardExpenseValidator.Core.pdb
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\OneCardExpenseValidator.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\OneCardExpenseValidator.Core.AssemblyInfoInputs.cache
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\OneCardExpenseValidator.Core.AssemblyInfo.cs
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\OneCardExpenseValidator.Core.csproj.CoreCompileInputs.cache
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\OneCardExpenseValidator.Core.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\refint\OneCardExpenseValidator.Core.dll
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\OneCardExpenseValidator.Core.pdb
+C:\Users\bejar\Downloads\OneCardExpenseValidator\OneCardExpenseValidator.Core\obj\Debug\net8.0\ref\OneCardExpenseValidator.Core.dll

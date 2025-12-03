@@ -1,0 +1,269 @@
+@model IEnumerable<OneCardExpenseValidator.Infrastructure.Entities.ExpenseTicket>
+
+@{
+    ViewData["Title"] = "Mis Tickets de Gastos";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-receipt-cutoff"></i> Mis Tickets de Gastos</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Ticket
+        </a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <ul class="nav nav-pills card-header-pills">
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == null ? "active" : "")" asp-action="MyTickets">
+                    Todos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == "Pending" ? "active" : "")" asp-action="MyTickets" asp-route-status="Pending">
+                    <i class="bi bi-hourglass-split"></i> Pendientes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == "Approved" ? "active" : "")" asp-action="MyTickets" asp-route-status="Approved">
+                    <i class="bi bi-check-circle"></i> Aprobados
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewBag.CurrentStatus == "Rejected" ? "active" : "")" asp-action="MyTickets" asp-route-status="Rejected">
+                    <i class="bi bi-x-circle"></i> Rechazados
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ticket #</th>
+                            <th>Fecha Ticket</th>
+                            <th>Vendedor</th>
+                            <th>Categoría</th>
+                            <th>Monto Total</th>
+                            <th>Monto a Reembolsar</th>
+                            <th>Productos No Deducibles</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var nonDeductibleItems = item.ExpenseItems?.Where(ei => ei.IsDeductible == false).ToList();
+                            var hasNonDeductible = nonDeductibleItems != null && nonDeductibleItems.Any();
+
+                            <tr>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.TicketId" class="fw-bold">
+                                        #@Html.DisplayFor(modelItem => item.TicketNumber)
+                                    </a>
+                                </td>
+                                <td>@item.TicketDate.ToString("dd/MM/yyyy")</td>
+                                <td>@Html.DisplayFor(modelItem => item.Vendor)</td>
+                                <td>@item.ExpenseItems.FirstOrDefault()?.Category?.CategoryName</td>
+                                <td><strong>@string.Format("${0:N2}", item.TotalAmount)</strong></td>
+                                <td>
+                                    @if (item.ValidationStatus == "Approved" && item.DeductibleAmount.HasValue)
+                                    {
+                                        <strong class="text-success">@string.Format("${0:N2}", item.DeductibleAmount.Value)</strong>
+                                        @if (item.NonDeductibleAmount.HasValue && item.NonDeductibleAmount.Value > 0)
+                                        {
+                                            <br/>
+                                            <small class="text-danger">
+                                                <i class="bi bi-dash-circle"></i> @string.Format("${0:N2}", item.NonDeductibleAmount.Value) no deducible
+                                            </small>
+                                        }
+                                    }
+                                    else if (item.ValidationStatus == "Pending")
+                                    {
+                                        <small class="text-muted">Pendiente de aprobación</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">-</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (hasNonDeductible)
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#nonDeductible_@item.TicketId"
+                                                aria-expanded="false"
+                                                aria-controls="nonDeductible_@item.TicketId">
+                                            <i class="bi bi-exclamation-triangle"></i> @nonDeductibleItems.Count producto(s)
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Todos deducibles
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.ValidationStatus == "Pending")
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-hourglass-split"></i> Pendiente
+                                        </span>
+                                    }
+                                    else if (item.ValidationStatus == "Approved")
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Aprobado
+                                        </span>
+                                    }
+                                    else if (item.ValidationStatus == "Rejected")
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> Rechazado
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.TicketId" class="btn btn-sm btn-info" title="Ver Detalles">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                </td>
+                            </tr>
+                            @if (hasNonDeductible)
+                            {
+                                <tr>
+                                    <td colspan="9" class="p-0 border-0">
+                                        <div class="collapse" id="nonDeductible_@item.TicketId">
+                                            <div class="card card-body bg-light border-danger m-2">
+                                                <h6 class="text-danger mb-3">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> Productos No Deducibles en este Ticket
+                                                </h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Producto</th>
+                                                                <th>Categoría</th>
+                                                                <th>Cantidad</th>
+                                                                <th>Precio</th>
+                                                                <th>Razón</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var nonDeductible in nonDeductibleItems)
+                                                            {
+                                                                <tr>
+                                                                    <td>
+                                                                        <strong>@(nonDeductible.Product?.ProductName ?? nonDeductible.ItemDescription)</strong>
+                                                                        @if (!string.IsNullOrEmpty(nonDeductible.Product?.Brand))
+                                                                        {
+                                                                            <br/><small class="text-muted">@nonDeductible.Product.Brand</small>
+                                                                        }
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-secondary">@nonDeductible.Category?.CategoryName</span>
+                                                                    </td>
+                                                                    <td>@nonDeductible.Quantity</td>
+                                                                    <td>@string.Format("${0:N2}", nonDeductible.TotalPrice)</td>
+                                                                    <td>
+                                                                        <small class="text-muted">
+                                                                            @if (!string.IsNullOrEmpty(nonDeductible.ValidationNotes))
+                                                                            {
+                                                                                @nonDeductible.ValidationNotes
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <text>Este producto no es deducible según la política de gastos.</text>
+                                                                            }
+                                                                        </small>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">No tienes tickets registrados</h4>
+                <p class="text-muted">Crea tu primer ticket de gasto para comenzar.</p>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Crear Primer Ticket
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    var totalNonDeductibleItems = Model.SelectMany(t => t.ExpenseItems ?? Enumerable.Empty<OneCardExpenseValidator.Infrastructure.Entities.ExpenseItem>())
+                                       .Count(ei => ei.IsDeductible == false);
+    var ticketsWithNonDeductible = Model.Count(t => t.ExpenseItems != null && t.ExpenseItems.Any(ei => ei.IsDeductible == false));
+
+    var approvedTickets = Model.Where(t => t.ValidationStatus == "Approved").ToList();
+    var totalToReceive = approvedTickets.Sum(t => t.DeductibleAmount ?? 0);
+    var totalNonDeductibleAmount = approvedTickets.Sum(t => t.NonDeductibleAmount ?? 0);
+    var totalTicketAmount = approvedTickets.Sum(t => t.TotalAmount);
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill"></i>
+                <strong>Total de tickets:</strong> @Model.Count()
+            </div>
+        </div>
+
+        @if (approvedTickets.Any())
+        {
+            <div class="col-md-4">
+                <div class="alert alert-success">
+                    <i class="bi bi-cash-stack"></i>
+                    <strong>Total a recibir de la compañía:</strong><br/>
+                    <span class="fs-4">@string.Format("${0:N2}", totalToReceive)</span>
+                    @if (totalNonDeductibleAmount > 0)
+                    {
+                        <br/>
+                        <small class="text-muted">De un total de @string.Format("${0:N2}", totalTicketAmount) en tickets aprobados</small>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (totalNonDeductibleItems > 0)
+        {
+            <div class="col-md-5">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Atención:</strong> Tienes @totalNonDeductibleItems producto(s) no deducible(s) en @ticketsWithNonDeductible ticket(s).
+                    @if (totalNonDeductibleAmount > 0)
+                    {
+                        <br/>
+                        <strong>Monto que pagarás tú:</strong> <span class="text-danger">@string.Format("${0:N2}", totalNonDeductibleAmount)</span>
+                    }
+                    <br/>
+                    <small>Los productos no deducibles no son elegibles para reembolso según la política de gastos de la empresa.</small>
+                </div>
+            </div>
+        }
+    </div>
+}
